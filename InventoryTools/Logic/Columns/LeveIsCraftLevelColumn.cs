@@ -15,7 +15,7 @@ namespace InventoryTools.Logic.Columns
         public override ColumnCategory ColumnCategory => ColumnCategory.Basic;
         public override bool? CurrentValue(ColumnConfiguration columnConfiguration, SearchResult searchResult)
         {
-            return searchResult.Item.HasSourcesByType(ItemInfoType.CraftLeve);
+            return searchResult.Item.HasUsesByType(ItemInfoType.CraftLeve);
         }
         public override string Name { get; set; } = "Is Leve(Craft) Item?";
         public override string RenderName => "Leve (Craft)";
