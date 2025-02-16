@@ -174,15 +174,34 @@
           "Veldrid.SDL2": "4.9.0"
         }
       },
+      "AllaganLib.Data": {
+        "type": "Transitive",
+        "resolved": "1.1.12",
+        "contentHash": "MuqPiTjtqkcgPpDiQ0vxRCe6wjEVdrbfqbODxMORCbfkYZxZKZNFlRLTNzBbjPl8lmZ+GmRgfCcTDcfISVCmsw==",
+        "dependencies": {
+          "CSVFile": "3.1.0",
+          "CsvHelper": "30.0.1"
+        }
+      },
       "AllaganLib.GameSheets": {
         "type": "Transitive",
-        "resolved": "1.1.17",
-        "contentHash": "ViziJLY97Wsxs8k52zVBzchdFUU3bnW7jJZX8fuL0bmYQD4D5lErTyZimrVUmZS2nKwicgBTl/e+EtvyHXIE3Q==",
+        "resolved": "1.1.19",
+        "contentHash": "cKbT26a27CDW4mR0YaT8cMUmsv8IKmgSsU1T9z8pZrm+psAo0tDLUFBJs4CwgtQIn+kX9QXbvHU7ALyuzU6FYw==",
         "dependencies": {
           "AllaganLib.Shared": "1.1.12",
           "Autofac.Extensions.DependencyInjection": "9.0.0",
           "CSVFile": "3.2.0",
-          "LuminaSupplemental.Excel": "2.1.8"
+          "LuminaSupplemental.Excel": "2.2.0"
+        }
+      },
+      "AllaganLib.Interface": {
+        "type": "Transitive",
+        "resolved": "1.1.16",
+        "contentHash": "Xp4IJsm1Fm8RabWmXcgXj7mZ28xzOA0EOFqIrAwrSKTalfrGlX6/bwe3m2LqU7/+HzM+aWchKdht4F8E1QNK7g==",
+        "dependencies": {
+          "AllaganLib.Data": "1.1.12",
+          "AllaganLib.Shared": "1.1.12",
+          "NaturalSort.Extension": "4.3.0"
         }
       },
       "AllaganLib.Shared": {
@@ -255,11 +274,12 @@
       },
       "LuminaSupplemental.Excel": {
         "type": "Transitive",
-        "resolved": "2.1.8",
-        "contentHash": "erJ2gwQvLU83jucUXa/aM+mJcFMdyDmpb328DFs5cO1VL2S+pgCx3m52+bFtULgkDVZnGCcR2EFYSQj9TlocIg==",
+        "resolved": "2.2.0",
+        "contentHash": "pRhyOy5oGEi1c6yb7nKPadVkUac+H8/SsHVobb8LWLib1HP4RkwBfeCuoy7M/WAFQj84rFSnC7/RHwCsv4WdgQ==",
         "dependencies": {
-          "CSVFile": "3.1.0",
-          "CsvHelper": "30.0.1"
+          "CSVFile": "3.2.0",
+          "CsvHelper": "30.0.1",
+          "Sylvan.Data.Csv": "1.3.9"
         }
       },
       "MessagePack": {
@@ -630,8 +650,8 @@
       },
       "NaturalSort.Extension": {
         "type": "Transitive",
-        "resolved": "3.2.0",
-        "contentHash": "E6DE1xnwGYIwvxMeqW/TwJ882q+NL+TBJtW1x+u5u77HMCupL9qBQUkQikFcZYH0oSBr47qLpC/UYx4atTLdQA=="
+        "resolved": "4.3.0",
+        "contentHash": "NGr3z/Izk16yxEcXKsopZvfYH8hh3iY7mmLJlT8iWVWBlidqGHeq2ykoy2JposrdM6aGvqjMfso9l0N8FzxAUw=="
       },
       "Newtonsoft.Json": {
         "type": "Transitive",
@@ -678,6 +698,11 @@
           "PolySharp": "1.10.0",
           "SharpGen.Runtime": "2.0.0-beta.13"
         }
+      },
+      "Sylvan.Data.Csv": {
+        "type": "Transitive",
+        "resolved": "1.3.9",
+        "contentHash": "ej6VghLaUn5/GK6jGFvd5aHn3Wue+Yp2tpmyI507PBRb/lFA6WAPS+3yKGr5wtFzh0zaE53CnCxhjc0ZW8xu3g=="
       },
       "System.Collections.Immutable": {
         "type": "Transitive",
@@ -827,7 +852,7 @@
       "criticalcommonlib": {
         "type": "Project",
         "dependencies": {
-          "AllaganLib.GameSheets": "[1.1.17, )",
+          "AllaganLib.GameSheets": "[1.1.19, )",
           "Humanizer.Core": "[3.0.0-beta.54, )",
           "Microsoft.Extensions.Hosting": "[8.0.1, )",
           "NaturalSort.Extension": "[3.2.0, )",
@@ -838,6 +863,7 @@
       "inventorytools": {
         "type": "Project",
         "dependencies": {
+          "AllaganLib.Interface": "[1.1.16, )",
           "Autofac": "[8.0.0, )",
           "Autofac.Extensions.DependencyInjection": "[9.0.0, )",
           "CriticalCommonLib": "[1.0.0, )",
