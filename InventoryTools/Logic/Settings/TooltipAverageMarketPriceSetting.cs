@@ -6,7 +6,7 @@ namespace InventoryTools.Logic.Settings
 {
     public class TooltipAverageMarketPriceSetting : BooleanSetting
     {
-        public override bool DefaultValue { get; set; } = true;
+        public override bool DefaultValue { get; set; } = false;
 
         public override bool CurrentValue(InventoryToolsConfiguration configuration)
         {
@@ -27,6 +27,8 @@ namespace InventoryTools.Logic.Settings
         public override SettingCategory SettingCategory { get; set; } = SettingCategory.ToolTips;
         public override SettingSubCategory SettingSubCategory { get; } = SettingSubCategory.MarketPricing;
         public override string Version => "1.7.0.0";
+
+        public override uint? Order => 0;
 
         public TooltipAverageMarketPriceSetting(ILogger<TooltipAverageMarketPriceSetting> logger, ImGuiService imGuiService) : base(logger, imGuiService)
         {

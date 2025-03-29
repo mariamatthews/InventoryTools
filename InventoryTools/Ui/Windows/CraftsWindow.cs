@@ -62,6 +62,7 @@ namespace InventoryTools.Ui
         private readonly IClipboardService _clipboardService;
         private readonly IKeyState _keyState;
         private readonly ItemSheet _itemSheet;
+        private readonly IFramework _framework;
         private IEnumerable<IMenuWindow> _menuWindows;
         private ThrottleDispatcher _throttleDispatcher;
 
@@ -72,7 +73,7 @@ namespace InventoryTools.Ui
             ICharacterMonitor characterMonitor, IFileDialogManager fileDialogManager, IGameUiManager gameUiManager,
             IChatUtilities chatUtilities, ListImportExportService importExportService,
             CraftWindowLayoutSetting layoutSetting, IComponentContext context, PopupService popupService,
-            IClipboardService clipboardService, IKeyState keyState, ItemSheet itemSheet) : base(logger, mediator, imGuiService, configuration, "Crafts Window")
+            IClipboardService clipboardService, IKeyState keyState, ItemSheet itemSheet, IFramework framework) : base(logger, mediator, imGuiService, configuration, "Crafts Window")
         {
             _tableService = tableService;
             _configuration = configuration;
@@ -92,6 +93,7 @@ namespace InventoryTools.Ui
             _clipboardService = clipboardService;
             _keyState = keyState;
             _itemSheet = itemSheet;
+            _framework = framework;
             Flags = ImGuiWindowFlags.MenuBar;
         }
         public override void Initialize()
@@ -526,15 +528,37 @@ namespace InventoryTools.Ui
 
                     if (ImGui.MenuItem("Paste List Contents"))
                     {
-                        var importedList = _importExportService.FromTCString(_clipboardService.PasteFromClipboard(), false);
+                        var pasteFromClipboard = _clipboardService.PasteFromClipboard();
+                        var importedList = _importExportService.FromTCString(pasteFromClipboard, false);
                         if (importedList == null)
                         {
-                            _chatUtilities.PrintError("The contents of your clipboard could not be parsed.");
+                            importedList =
+                                _importExportService.FromGarlandToolsUrl(pasteFromClipboard);
+                            if (importedList == null)
+                            {
+                                _chatUtilities.PrintError("The contents of your clipboard could not be parsed.");
+                            }
+                            else
+                            {
+                                _chatUtilities.Print("The contents of your clipboard were imported.");
+                                this.SelectedConfiguration.AddItemsToList(importedList);
+                            }
                         }
                         else
                         {
                             _chatUtilities.Print("The contents of your clipboard were imported.");
                             this.SelectedConfiguration.AddItemsToList(importedList);
+                        }
+                    }
+
+                    if (ImGui.IsItemHovered())
+                    {
+                        using(var tooltip = ImRaii.Tooltip())
+                        {
+                            if (tooltip)
+                            {
+                                ImGui.TextUnformatted("This will paste the contents of items copied via the 'Copy List Contents' menu above, it also will attempt to parse Teamcraft lists if one is in your clipboard. If you have a garland tools URL in your clipboard that points to a group, it will also attempt to parse that add it to your craft list.");
+                            }
                         }
                     }
                     if (ImGui.MenuItem("Clear List"))
@@ -922,7 +946,7 @@ namespace InventoryTools.Ui
             }
             if (ImGuiUtil.OpenNameField("addCraftFilterName", ref _newCraftName))
             {
-                Service.Framework.RunOnFrameworkThread(() =>
+                _framework.RunOnFrameworkThread(() =>
                 {
                     AddCraftFilter(_newCraftName, _ephemeralList);
                     _newCraftName = "";
@@ -1052,7 +1076,7 @@ namespace InventoryTools.Ui
                                     _configuration.ActiveUiFilter != filterConfiguration.Key &&
                                     _configuration.ActiveUiFilter != null)
                                 {
-                                    Service.Framework.RunOnFrameworkThread(() =>
+                                    _framework.RunOnFrameworkThread(() =>
                                     {
                                         _listService.ToggleActiveUiList(filterConfiguration);
                                     });
@@ -1061,7 +1085,7 @@ namespace InventoryTools.Ui
                                     _configuration.ActiveCraftList != filterConfiguration.Key &&
                                     _configuration.ActiveCraftList != null && filterConfiguration.FilterType == FilterType.CraftFilter)
                                 {
-                                    Service.Framework.RunOnFrameworkThread(() =>
+                                    _framework.RunOnFrameworkThread(() =>
                                     {
                                         _listService.ToggleActiveCraftList(filterConfiguration);
                                     });
@@ -1121,7 +1145,7 @@ namespace InventoryTools.Ui
                                         ImGui.TextUnformatted("Start typing to search...");
                                     }
 
-                                    using var table = ImRaii.Table("", 2, ImGuiTableFlags.None);
+                                    using var table = ImRaii.Table("", 2, ImGuiTableFlags.SizingStretchProp);
                                     if (!table || !table.Success)
                                         return;
 
@@ -1168,7 +1192,7 @@ namespace InventoryTools.Ui
                                         _configuration.ActiveUiFilter != filterConfiguration.Key &&
                                         _configuration.ActiveUiFilter != null)
                                     {
-                                        Service.Framework.RunOnFrameworkThread(() =>
+                                        _framework.RunOnFrameworkThread(() =>
                                         {
                                             _listService.ToggleActiveUiList(filterConfiguration);
                                         });
@@ -1177,7 +1201,7 @@ namespace InventoryTools.Ui
                                         _configuration.ActiveCraftList != filterConfiguration.Key &&
                                         _configuration.ActiveCraftList != null && filterConfiguration.FilterType == FilterType.CraftFilter)
                                     {
-                                        Service.Framework.RunOnFrameworkThread(() =>
+                                        _framework.RunOnFrameworkThread(() =>
                                         {
                                             _listService.ToggleActiveCraftList(filterConfiguration);
                                         });
@@ -1236,7 +1260,7 @@ namespace InventoryTools.Ui
                     ImGui.Checkbox("Highlight?" + "###" + itemTable.Key + "VisibilityCheckbox", ref highlightItems);
                     if (highlightItems != itemTable.HighlightItems)
                     {
-                        Service.Framework.RunOnFrameworkThread(() =>
+                        _framework.RunOnFrameworkThread(() =>
                         {
                             _listService.ToggleActiveUiList(itemTable.FilterConfiguration);
                         });
@@ -1420,22 +1444,17 @@ namespace InventoryTools.Ui
                             if (ImGui.Button("Add Company Craft to List"))
                             {
                                 var subAddon = (SubmarinePartsMenuAddon*)subMarinePartsMenu;
-                                for (int i = 0; i < 6; i++)
+                                for (byte i = 0; i < 6; i++)
                                 {
-                                    var itemRequired = subAddon->RequiredItemId(i);
-                                    if (itemRequired != 0)
+                                    var itemRequired = subAddon->GetItem(i);
+                                    if (itemRequired != null)
                                     {
-                                        var amountHandedIn = subAddon->AmountHandedIn(i);
-                                        var amountNeeded = subAddon->AmountNeeded(i);
-                                        var amountLeft = Math.Max(
-                                            (int)amountNeeded - (int)amountHandedIn,
-                                            0);
+                                        var amountLeft = itemRequired.Value.QtyRemaining;
                                         if (amountLeft > 0)
                                         {
-                                            Service.Framework.RunOnFrameworkThread(() =>
+                                            _framework.RunOnFrameworkThread(() =>
                                             {
-                                                filterConfiguration.CraftList.AddCraftItem(itemRequired,
-                                                    (uint)amountLeft, InventoryItem.ItemFlags.None);
+                                                filterConfiguration.CraftList.AddCraftItem(itemRequired.Value.ItemId, amountLeft);
                                                 filterConfiguration.NeedsRefresh = true;
                                             });
                                         }
@@ -1848,7 +1867,7 @@ namespace InventoryTools.Ui
             {
                 if (_addIcon.Draw(ImGuiService.GetIconTexture(66315).ImGuiHandle, "bbadd_" + item.RowId, new Vector2(16,16) * ImGui.GetIO().FontGlobalScale))
                 {
-                    Service.Framework.RunOnFrameworkThread(() =>
+                    _framework.RunOnFrameworkThread(() =>
                     {
                         filterConfiguration.CraftList.AddCraftItem(item.RowId, 1, InventoryItem.ItemFlags.None);
                         filterConfiguration.NeedsRefresh = true;

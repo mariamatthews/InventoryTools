@@ -26,7 +26,7 @@ public class UseInformationTooltip : BaseTooltip
     private readonly IKeyState _keyState;
     private readonly IUnlockTrackerService _unlockTrackerService;
 
-    public UseInformationTooltip(ILogger<UseInformationTooltip> logger, TooltipUseInformationColorSetting colorSetting, ItemInfoRenderService itemInfoRenderService, ShowTooltipsSetting showTooltipsSetting, TooltipUseInformationSetting useInformationSetting, TooltipUseInformationEnabledSetting enabledSetting, TooltipUseInformationModifierSetting modifierSetting, IKeyState keyState, ItemSheet itemSheet, InventoryToolsConfiguration configuration, IGameGui gameGui, IDalamudPluginInterface pluginInterface, IUnlockTrackerService unlockTrackerService) : base(6907, logger, itemSheet, configuration, gameGui, pluginInterface)
+    public UseInformationTooltip(ILogger<UseInformationTooltip> logger, TooltipUseInformationColorSetting colorSetting, ItemInfoRenderService itemInfoRenderService, ShowTooltipsSetting showTooltipsSetting, TooltipUseInformationSetting useInformationSetting, TooltipUseInformationEnabledSetting enabledSetting, TooltipUseInformationModifierSetting modifierSetting, IKeyState keyState, ItemSheet itemSheet, InventoryToolsConfiguration configuration, IGameGui gameGui, IDalamudPluginInterface pluginInterface, IUnlockTrackerService unlockTrackerService, IPluginLog pluginLog) : base(6907, logger, itemSheet, configuration, gameGui, pluginInterface)
     {
         _colorSetting = colorSetting;
         _itemInfoRenderService = itemInfoRenderService;
@@ -114,12 +114,12 @@ public class UseInformationTooltip : BaseTooltip
             var newText = "";
             if (textLines.Count != 0)
             {
-                newText = "Uses: " + string.Join(", ", textLines.Distinct());
+                newText = "\nUses: " + string.Join(", ", textLines.Distinct());
             }
 
+            newText = newText.TrimEnd('\n');
             if (newText != "")
             {
-                newText += "\n";
                 var lines = new List<Payload>()
                 {
                     new UIForegroundPayload((ushort)(_colorSetting.CurrentValue(Configuration) ?? Configuration.TooltipColor ?? 1)),

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Web;
 using AllaganLib.GameSheets.Sheets;
 using CriticalCommonLib.Crafting;
 using CriticalCommonLib.Models;
+using CriticalCommonLib.Resolvers;
 using InventoryTools.Extensions;
 using InventoryTools.Logic;
 using InventoryTools.Services;
@@ -22,10 +25,14 @@ public enum TCExportMode
 public class ListImportExportService
 {
     private readonly ItemSheet _itemSheet;
+    private readonly FilterConfiguration.Factory _filterConfigurationFactory;
+    private readonly AutofacResolver _autofacResolver;
 
-    public ListImportExportService(VersionInfo info , ItemSheet itemSheet)
+    public ListImportExportService(VersionInfo info , ItemSheet itemSheet, FilterConfiguration.Factory filterConfigurationFactory, AutofacResolver autofacResolver)
     {
         _itemSheet = itemSheet;
+        _filterConfigurationFactory = filterConfigurationFactory;
+        _autofacResolver = autofacResolver;
         CurrentVersion = (byte)info.ImportExportVersion;
     }
 
@@ -46,7 +53,8 @@ public class ListImportExportService
     }
     public bool FromBase64(string data, out FilterConfiguration filterConfiguration)
     {
-        filterConfiguration = new FilterConfiguration();
+        filterConfiguration = _filterConfigurationFactory.Invoke();
+        filterConfiguration.FilterType = FilterType.SearchFilter;
         try
         {
             var bytes = data.FromCompressedBase64();
@@ -56,7 +64,10 @@ public class ListImportExportService
             }
 
             var json = Encoding.UTF8.GetString(bytes.AsSpan()[1..]);
-            var deserializeObject = JsonConvert.DeserializeObject<FilterConfiguration>(json);
+            var deserializeObject = JsonConvert.DeserializeObject<FilterConfiguration>(json,new JsonSerializerSettings()
+            {
+                ContractResolver = _autofacResolver
+            });
             if (deserializeObject == null)
             {
                 return false;
@@ -125,6 +136,60 @@ public class ListImportExportService
         if (output.Count == 0) return null;
 
         return output;
+    }
+
+    public List<(uint, uint)>? FromGarlandToolsUrl(string garlandToolsUrl)
+    {
+        garlandToolsUrl = HttpUtility.UrlDecode(garlandToolsUrl);
+        if (string.IsNullOrEmpty(garlandToolsUrl))
+        {
+            return null;
+        }
+
+        if (!garlandToolsUrl.Contains("https://garlandtools.org/db/#group/"))
+        {
+            return null;
+        }
+
+        garlandToolsUrl = garlandToolsUrl.Replace("https://garlandtools.org/db/#group/", "");
+        var listStart = garlandToolsUrl.IndexOf('{');
+        if (listStart == -1)
+        {
+            return null;
+        }
+        garlandToolsUrl = garlandToolsUrl.Substring(listStart).TrimStart('{').TrimEnd('}');
+        var items = garlandToolsUrl.Split('|');
+        var results = new List<(uint, uint)>();
+        foreach (var item in items)
+        {
+            var quantity = 1u;
+            var itemId = item;
+            if (itemId.Contains("item/"))
+            {
+                itemId = itemId.Replace("item/", "");
+                if (itemId.Contains('+') || itemId.Contains(' '))
+                {
+#pragma warning disable S3220
+                    var split = itemId.Split(['+',' ']);
+#pragma warning restore S3220
+                    itemId = split[0];
+                    if (split.Length > 1 && uint.TryParse(split[1], out uint parsedQuantity))
+                    {
+                        quantity = parsedQuantity;
+                    }
+                }
+
+                if (uint.TryParse(itemId, out var parsedItemId))
+                {
+                    var itemRow = _itemSheet.GetRowOrDefault(parsedItemId);
+                    if (itemRow != null)
+                    {
+                        results.Add((itemRow.RowId, quantity));
+                    }
+                }
+            }
+        }
+        return results;
     }
 
     public string ToTCString(List<CraftItem> craftItems, TCExportMode exportMode = TCExportMode.Required)
